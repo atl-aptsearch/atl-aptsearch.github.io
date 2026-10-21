@@ -891,7 +891,51 @@ const state = { beds: "all", min: 60, max: 2700, out: false, sel: null };
 try { const s = JSON.parse(localStorage.getItem("mapFilters") || "{}"); Object.assign(state, s, { sel: null }); } catch (e) {}
 
 // map
-const map = L.map("map", { zoomControl: true, minZoom: 12, maxZoom: 19, zoomSnap: 0.5, zoomDelta: 0.5, wheelPxPerZoomLevel: 60, wheelDebounceTime: 20, fadeAnimation: false, maxBounds: [[33.69, -84.46], [33.84, -84.28]], maxBoundsViscosity: 0.8 });
+// Smooth, non-blocking wheel zoom: each frame eases toward a goal zoom with map._move (the path
+// Leaflet's own pinch zoom uses), so new wheel input retargets instead of waiting for an animation.
+// Adapted from Leaflet.SmoothWheelZoom (mutsuyuki, MIT).
+L.Map.mergeOptions({ smoothWheelZoom: true, smoothSensitivity: 1 });
+L.Map.SmoothWheelZoom = L.Handler.extend({
+  addHooks() { L.DomEvent.on(this._map._container, "wheel", this._onWheel, this); },
+  removeHooks() { L.DomEvent.off(this._map._container, "wheel", this._onWheel, this); },
+  _onWheel(e) {
+    const map = this._map;
+    if (!this._wheeling) {
+      this._wheeling = true; this._moved = false;
+      this._mouse = map.mouseEventToContainerPoint(e);
+      this._centerPt = map.getSize()._divideBy(2);
+      this._wheelStartLatLng = map.containerPointToLatLng(this._mouse);
+      map._stop(); if (map._panAnim) map._panAnim.stop();
+      this._goal = map.getZoom(); this._prevCenter = map.getCenter(); this._prevZoom = map.getZoom();
+      this._frame = requestAnimationFrame(this._step.bind(this));
+    }
+    this._goal = map._limitZoom(this._goal + L.DomEvent.getWheelDelta(e) * 0.003 * map.options.smoothSensitivity);
+    this._mouse = map.mouseEventToContainerPoint(e);
+    clearTimeout(this._timer);
+    this._timer = setTimeout(() => {
+      this._wheeling = false; cancelAnimationFrame(this._frame);
+      if (!this._moved) return;
+      map._moveEnd(true);
+      // settle on a whole zoom level so the resting tiles are drawn at full sharpness
+      const whole = map._limitZoom(Math.round(map.getZoom()));
+      if (Math.abs(whole - map.getZoom()) > 0.01) map.setZoomAround(this._mouse, whole, { animate: true });
+    }, 200);
+    L.DomEvent.preventDefault(e); L.DomEvent.stopPropagation(e);
+  },
+  _step() {
+    const map = this._map;
+    if (!map.getCenter().equals(this._prevCenter) || map.getZoom() !== this._prevZoom) return;  // something else moved the map
+    const z = Math.round((map.getZoom() + (this._goal - map.getZoom()) * 0.3) * 1000) / 1000;
+    const delta = this._mouse.subtract(this._centerPt);
+    const center = map.unproject(map.project(this._wheelStartLatLng, z).subtract(delta), z);
+    if (!this._moved) { map._moveStart(true, false); this._moved = true; }
+    map._move(center, z);
+    this._prevCenter = map.getCenter(); this._prevZoom = map.getZoom();
+    this._frame = requestAnimationFrame(this._step.bind(this));
+  }
+});
+L.Map.addInitHook("addHandler", "smoothWheelZoom", L.Map.SmoothWheelZoom);
+const map = L.map("map", { zoomControl: true, minZoom: 12, maxZoom: 19, zoomSnap: 0, zoomDelta: 1, scrollWheelZoom: false, fadeAnimation: false, maxBounds: [[33.69, -84.46], [33.84, -84.28]], maxBoundsViscosity: 0.8 });
 const isDark = () => { const t = document.documentElement.getAttribute("data-theme"); return t ? t === "dark" : matchMedia("(prefers-color-scheme: dark)").matches; };
 // OpenStreetMap standard tiles; dark mode inverts them with --tile-filter
 // Load one ring of tiles beyond the view so panning doesn't reveal blank edges
@@ -907,6 +951,7 @@ const retheme = () => { nbLayer.setStyle(nbStyle()); gtLayer.setStyle(gtStyle())
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", retheme);
 new MutationObserver(retheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 map.fitBounds([[33.742, -84.395], [33.795, -84.345]]);
+map.setZoom(Math.floor(map.getZoom()), { animate: false });  // open on a whole zoom level so tiles are sharp
 
 const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 map.createPane("zones"); map.getPane("zones").style.zIndex = 350;
