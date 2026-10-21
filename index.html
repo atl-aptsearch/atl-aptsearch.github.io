@@ -894,7 +894,7 @@ try { const s = JSON.parse(localStorage.getItem("mapFilters") || "{}"); Object.a
 // Smooth, non-blocking wheel zoom: each frame eases toward a goal zoom with map._move (the path
 // Leaflet's own pinch zoom uses), so new wheel input retargets instead of waiting for an animation.
 // Adapted from Leaflet.SmoothWheelZoom (mutsuyuki, MIT).
-L.Map.mergeOptions({ smoothWheelZoom: true, smoothSensitivity: 1 });
+L.Map.mergeOptions({ smoothWheelZoom: true, smoothSensitivity: 2 });
 L.Map.SmoothWheelZoom = L.Handler.extend({
   addHooks() { L.DomEvent.on(this._map._container, "wheel", this._onWheel, this); },
   removeHooks() { L.DomEvent.off(this._map._container, "wheel", this._onWheel, this); },
