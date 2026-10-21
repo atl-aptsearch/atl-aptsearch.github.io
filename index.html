@@ -915,10 +915,7 @@ L.Map.SmoothWheelZoom = L.Handler.extend({
     this._timer = setTimeout(() => {
       this._wheeling = false; cancelAnimationFrame(this._frame);
       if (!this._moved) return;
-      map._moveEnd(true);
-      // settle on a whole zoom level so the resting tiles are drawn at full sharpness
-      const whole = map._limitZoom(Math.round(map.getZoom()));
-      if (Math.abs(whole - map.getZoom()) > 0.01) map.setZoomAround(this._mouse, whole, { animate: true });
+      map._moveEnd(true);  // stay exactly where the user stopped
     }, 200);
     L.DomEvent.preventDefault(e); L.DomEvent.stopPropagation(e);
   },
