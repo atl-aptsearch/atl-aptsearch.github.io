@@ -927,6 +927,13 @@ L.Map.SmoothWheelZoom = L.Handler.extend({
     const center = map.unproject(map.project(this._wheelStartLatLng, z).subtract(delta), z);
     if (!this._moved) { map._moveStart(true, false); this._moved = true; }
     map._move(center, z);
+    // Redraw outlines at the new zoom every frame; otherwise Leaflet stretches the old SVG
+    // (thicker or thinner lines, clipped edges) and snaps it into place when the zoom ends.
+    for (const r of [map._renderer, ...Object.values(map._paneRenderers || {})]) {
+      if (!r || !r._map) continue;
+      r._update();
+      for (const id in r._layers) { const l = r._layers[id]; l._project(); l._update(); }
+    }
     this._prevCenter = map.getCenter(); this._prevZoom = map.getZoom();
     this._frame = requestAnimationFrame(this._step.bind(this));
   }
