@@ -891,7 +891,7 @@ const state = { beds: "all", min: 60, max: 2700, out: false, sel: null };
 try { const s = JSON.parse(localStorage.getItem("mapFilters") || "{}"); Object.assign(state, s, { sel: null }); } catch (e) {}
 
 // map
-const map = L.map("map", { zoomControl: true, minZoom: 12, maxZoom: 19, zoomSnap: 0.25, zoomDelta: 0.5, wheelPxPerZoomLevel: 45, wheelDebounceTime: 10, maxBounds: [[33.69, -84.46], [33.84, -84.28]], maxBoundsViscosity: 0.8 });
+const map = L.map("map", { zoomControl: true, minZoom: 12, maxZoom: 19, zoomSnap: 0.5, zoomDelta: 0.5, wheelPxPerZoomLevel: 60, wheelDebounceTime: 20, fadeAnimation: false, maxBounds: [[33.69, -84.46], [33.84, -84.28]], maxBoundsViscosity: 0.8 });
 const isDark = () => { const t = document.documentElement.getAttribute("data-theme"); return t ? t === "dark" : matchMedia("(prefers-color-scheme: dark)").matches; };
 // OpenStreetMap standard tiles; dark mode inverts them with --tile-filter
 // Load one ring of tiles beyond the view so panning doesn't reveal blank edges
@@ -901,7 +901,7 @@ const Buffered = L.TileLayer.extend({
     return new L.Bounds(b.min.subtract(pad), b.max.add(pad));
   }
 });
-const base = new Buffered("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, updateInterval: 100, keepBuffer: 4,
+const base = new Buffered("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, updateInterval: 100, keepBuffer: 4, updateWhenZooming: false,
   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors' }).addTo(map);
 const retheme = () => { nbLayer.setStyle(nbStyle()); gtLayer.setStyle(gtStyle()); gtLayer.eachLayer(l => { const el = l.getTooltip() && l.getTooltip().getElement(); if (el) el.style.color = cssVar("--gt"); }); zoneLayer.setStyle(zoneStyle); zoneLayer.eachLayer(l => { const el = l.getTooltip() && l.getTooltip().getElement(); if (el) el.style.color = l.options.color; }); };
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", retheme);
