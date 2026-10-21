@@ -891,7 +891,7 @@ const state = { beds: "all", min: 60, max: 2700, out: false, sel: null };
 try { const s = JSON.parse(localStorage.getItem("mapFilters") || "{}"); Object.assign(state, s, { sel: null }); } catch (e) {}
 
 // map
-const map = L.map("map", { zoomControl: true, minZoom: 12, maxZoom: 19, zoomSnap: 0, zoomDelta: 0.5, wheelPxPerZoomLevel: 110, maxBounds: [[33.69, -84.46], [33.84, -84.28]], maxBoundsViscosity: 0.8 });
+const map = L.map("map", { zoomControl: true, minZoom: 12, maxZoom: 19, zoomSnap: 0.25, zoomDelta: 0.5, wheelPxPerZoomLevel: 45, wheelDebounceTime: 10, maxBounds: [[33.69, -84.46], [33.84, -84.28]], maxBoundsViscosity: 0.8 });
 const isDark = () => { const t = document.documentElement.getAttribute("data-theme"); return t ? t === "dark" : matchMedia("(prefers-color-scheme: dark)").matches; };
 // OpenStreetMap standard tiles; dark mode inverts them with --tile-filter
 // Load one ring of tiles beyond the view so panning doesn't reveal blank edges
