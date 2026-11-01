@@ -1160,16 +1160,36 @@ DATA.items.forEach(d => {
   markers[key] = m;
 });
 
+const offerMarkers = DATA.neighborhoodBrief.flatMap(neighborhoodOffers).map(offer => {
+  const marker = L.marker([offer.lat, offer.lng], {
+    title: offer.name,
+    icon: L.divIcon({ className: '', html: '<div class="pin" style="background:var(--muted)">?</div>', iconSize: [34, 34] })
+  }).bindTooltip(`${esc(offer.name)} · gates unresolved`);
+  marker.on('add', () => marker.getElement()?.setAttribute('aria-label', `${offer.name}, gates unresolved`));
+  marker.on('click', () => {
+    state.neighborhood = offer.neighborhood; state.sel = null;
+    writeLocation(); syncControls(); refresh();
+    const card = document.getElementById(offer.key);
+    card?.scrollIntoView({block: 'start'}); card?.focus({preventScroll: true});
+  });
+  return {offer, marker};
+});
+
 function refresh(filtersChanged = false) {
   try { localStorage.setItem("mapFiltersNeighborhoodBrief", JSON.stringify({ beds: state.beds, min: state.min, max: state.max, area: state.area, neighborhood: state.neighborhood, out: state.out, shortlist: state.shortlist })); } catch (e) {}
   shownGroups = groupListings(DATA.items, state);
+  for (const {offer, marker} of offerMarkers) {
+    const visible = state.shortlist && (!state.neighborhood || offer.neighborhood === state.neighborhood);
+    if (visible && !map.hasLayer(marker)) marker.addTo(map);
+    if (!visible && map.hasLayer(marker)) map.removeLayer(marker);
+  }
   const selectedKey = state.sel == null ? null : propertyKey(DATA.items[state.sel]);
   if (filtersChanged && selectedKey) {
     const best = shownGroups.find(g => g.key === selectedKey)?.best;
     if (best && !matchesFilters(DATA.items[state.sel], state)) state.sel = best.id;
   }
   for (const [key, m] of Object.entries(markers)) {
-    const g = shownGroups.find(g => g.key === key);
+    const g = state.shortlist ? null : shownGroups.find(g => g.key === key);
     if (!g) { if (map.hasLayer(m)) map.removeLayer(m); continue; }
     const multi = g.choices.length === 2, out = !g.best, selected = selectedKey === key;
     m.setIcon(L.divIcon({ className: "", html: `<div class="pin${out ? " out" : ""}${multi ? " multi" : ""}${selected ? " sel" : ""}" style="background:${tone(g.score)}">${g.label}</div>`, iconSize: out ? [22, 22] : [multi ? 66 : 34, 34] }));
@@ -1180,7 +1200,8 @@ function refresh(filtersChanged = false) {
   }
   const shown = shownGroups.filter(g => g.best).length;
   const options = DATA.items.filter(d => matchesFilters(d, state)).length;
-  $("#count").textContent = state.shortlist ? `${shown} of ${DATA.shortlist.length} conditional picks` : `${shown} properties · ${options} matching options`;
+  const offerCount = DATA.neighborhoodBrief.filter(a => !state.neighborhood || a.name === state.neighborhood).flatMap(neighborhoodOffers).length;
+  $("#count").textContent = state.shortlist ? `${offerCount} recorded offers · gates unresolved` : `${shown} properties · ${options} matching options`;
   if (state.sel == null) renderList(); else renderCard(DATA.items[state.sel]);
 }
 
@@ -1198,8 +1219,17 @@ function linkedCopy(record, field) {
 function visitChecks(record) {
   return record.visit_checks?.length ? `<h3 class="sect">Visit checks</h3><ul>${record.visit_checks.map(c => `<li>${esc(c)}</li>`).join('')}</ul>` : '';
 }
+function neighborhoodOffers(area) {
+  const selected = DATA.shortlist.filter(e => e.neighborhood === area.name).map(e => {
+    const item = DATA.items.find(d => d.listingId === e.listingId);
+    return {...e, lat: item.lat, lng: item.lng, url: e.link, checked: e.availabilityChecked,
+      summary: `$${e.allin.toLocaleString('en-US')}${e.feesUnknown ? ' + unconfirmed fees' : ' posted monthly subtotal; reconfirm'}. ${e.bike} min estimated bike to Coon. Recorded score ${e.score}/100 across ${e.criteria} criteria; ${e.gate}.`};
+  });
+  return [...selected, ...area.leads].map(offer => ({...offer,
+    key: 'offer-' + encodeURIComponent(area.name + '/' + offer.name)}));
+}
 function leadCard(l) {
-  return `<section><h3 class="sect">${esc(l.name)} · Unscored</h3><p class="notes">${linkedCopy(l, 'summary')}</p>${visitChecks(l)}<p class="notes">Offer evidence: ${esc(l.checked)}. ${esc(l.coordinateSource)}</p><a href="${esc(l.url)}" target="_blank" rel="noopener">Listing source</a></section>`;
+  return `<section id="${esc(l.key)}" tabindex="-1"><h3 class="sect">${esc(l.name)}</h3><p class="notes">${linkedCopy(l, 'summary')}</p>${l.reason ? `<p class="notes"><strong>Why:</strong> ${linkedCopy(l, 'reason')}</p><p class="notes"><strong>Tradeoff:</strong> ${linkedCopy(l, 'tradeoff')}</p><p class="notes"><strong>Before committing:</strong> ${linkedCopy(l, 'checks')}</p>` : ''}${visitChecks(l)}<p class="notes">Offer evidence: ${esc(l.checked || 'not refreshed')}. Gates unresolved; not booked for a tour.</p><a href="${esc(l.url)}" target="_blank" rel="noopener">Listing source</a></section>`;
 }
 function neighborhoodIntro(a) {
   return `<h2>${esc(a.name)}</h2><p class="notes">${linkedCopy(a, 'decision')}</p>
@@ -1209,7 +1239,7 @@ function neighborhoodIntro(a) {
       <p class="notes"><strong>Sadie:</strong> ${linkedCopy(a, 'sadie')}</p>
       <p class="notes"><strong>Together:</strong> ${linkedCopy(a, 'evenings')}</p>
       ${visitChecks(a)}
-      <p class="notes">${a.comparisonIds.length} recorded comparison options at ${a.propertyCount} properties. Not a rental-market census.</p>
+      <p class="notes">${neighborhoodOffers(a).length} offers below. Historical scored comparison: ${a.comparisonIds.length} options at ${a.propertyCount} properties, separate from this offer count. Not a rental-market census.</p>
       <p class="notes"><a href="${esc(a.mapUrl)}">Focus ${esc(a.name)} on the map</a></p>`;
 }
 // End realtor neighborhood cards
@@ -1218,13 +1248,8 @@ function renderList() {
   if (state.shortlist) {
     const areas = DATA.neighborhoodBrief.filter(a => !state.neighborhood || a.name === state.neighborhood);
     $("#panel").innerHTML = areas.map(a => {
-      const picks = shownGroups.filter(g => g.best?.neighborhood === a.name);
-      const total = DATA.shortlist.filter(e => e.neighborhood === a.name).length;
       return `<section class="card" style="padding:16px">${neighborhoodIntro(a)}
-        <p class="notes"><strong>${picks.length} of ${total} conditional picks match filters</strong></p>
-        <ol class="list">${listingRows(picks)}</ol>
-        ${!total ? '<p class="notes">No current pick. Seek better-supported homes, not a quota.</p>' : !picks.length ? '<p class="notes">Picks hidden by filters. Reset bedrooms, score or cost to see them.</p>' : ''}
-        ${a.leads.map(leadCard).join('')}
+        ${neighborhoodOffers(a).map(leadCard).join('') || '<p class="notes">No current offer card. See the neighborhood decision and unresolved search gaps above.</p>'}
       </section>`;
     }).join('') + `<section class="card" style="padding:16px"><h2>Before tours</h2><p class="notes">${esc(DATA.shortlistIntro.checks)}</p><details><summary>Evidence and limits</summary><p class="notes">${esc(DATA.shortlistIntro.evidence)}</p><p class="notes">${esc(DATA.shortlistIntro.policy)}</p></details></section>`;
   } else {
@@ -1372,7 +1397,8 @@ function syncControls() {
   sa.innerHTML = `<option value="">${state.shortlist ? 'All drawn neighborhoods' : 'All search areas'}</option>`;
   (state.shortlist ? DATA.neighborhoodBrief : DATA.searchAreas).forEach(a => { const option = document.createElement('option'); option.value = a.name; option.textContent = a.name; sa.append(option); });
   sa.value = state.shortlist ? state.neighborhood : state.area;
-  $("#areaQuestion").textContent = state.shortlist ? 'Choose a drawn neighborhood. Local priorities guide picks; scores and hard gates stay comparable.' : DATA.searchAreas.find(a => a.name === state.area)?.question || 'Choose an area to compare homes there. Empty areas are search gaps, not rejections.';
+  $("#areaQuestion").textContent = state.shortlist ? '? means checks remain, not a score. All offers appear together. Use All listings for bedroom, score and cost filters.' : DATA.searchAreas.find(a => a.name === state.area)?.question || 'Choose an area to compare homes there. Empty areas are search gaps, not rejections.';
+  for (const control of [ms, mr, so, ...document.querySelectorAll('.seg button')]) control.disabled = state.shortlist;
   ms.value = state.min; $("#minScoreOut").textContent = `${state.min}+`;
   mr.value = state.max; $("#maxRentOut").textContent = money(state.max);
   so.checked = state.out;
