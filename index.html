@@ -1180,7 +1180,6 @@ const offerMarkers = DATA.neighborhoodBrief.flatMap(a => [
   }).bindTooltip(`${esc(offer.name)} · ${esc(rating.description)} · checks remain`);
   marker.on('add', () => marker.getElement()?.setAttribute('aria-label', `${offer.name}, ${rating.description}, checks remain`));
   marker.on('click', () => {
-    state.neighborhood = offer.neighborhood;
     const item = reportItem(offer);
     if (item) { select(item.id, false); syncControls(); return; }
     state.sel = null;
