@@ -12,48 +12,75 @@
 <meta property="og:image" content="https://atl-aptsearch.github.io/assets/visit/winton-527-a-exterior.jpg">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
 <style>
-:root { color-scheme:light; --bg:#f3f5f2; --panel:#fff; --ink:#1c2420; --muted:#536159; --line:#cdd6cf; --accent:#8a3e14; --warn-bg:#fbeee3; }
+:root {
+  color-scheme:light;
+  --bg: #f3f5f2; --panel: #ffffff; --ink: #1c2420; --muted: #5d6b64; --line: #dbe2dd;
+  --accent: #d9622b; --accent-ink: #ffffff; --link: #8a3e14;
+  --warn-bg: #fbeee3; --warn-ink: #8a3e14; --tile-filter: none;
+  --display: "Barlow Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --body: "Barlow", "Helvetica Neue", Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme:dark;
+    --bg: #121714; --panel: #1a211d; --ink: #e6ece8; --muted: #9aa8a0; --line: #2c3631;
+    --accent: #f08a54; --accent-ink: #1a110b; --link: #f08a54;
+    --warn-bg: #3a2618; --warn-ink: #f2b38c;
+    --tile-filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.88) saturate(0.6);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme:dark;
+  --bg: #121714; --panel: #1a211d; --ink: #e6ece8; --muted: #9aa8a0; --line: #2c3631;
+  --accent: #f08a54; --accent-ink: #1a110b; --link: #f08a54;
+  --warn-bg: #3a2618; --warn-ink: #f2b38c;
+  --tile-filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.88) saturate(0.6);
+}
 * { box-sizing:border-box; }
 [hidden] { display:none !important; }
 html { scroll-padding-top:24px; }
-body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
-a { color:var(--accent); text-underline-offset:4px; overflow-wrap:anywhere; }
+body { margin:0; background:var(--bg); color:var(--ink); font-family:var(--body); font-size:15px; line-height:1.45; }
+a { color:var(--link); text-underline-offset:4px; overflow-wrap:anywhere; }
 a:hover { text-decoration-thickness:2px; }
 :focus-visible { outline:3px solid var(--accent); outline-offset:4px; }
 button { font:inherit; cursor:pointer; color:var(--ink); background:var(--panel); border:1px solid var(--line); border-radius:4px; padding:8px 16px; min-height:44px; }
-button:hover,button[aria-pressed="true"] { background:var(--ink); color:#fff; }
+button:hover,button[aria-pressed="true"] { background:var(--ink); color:var(--panel); }
 .skip { position:absolute; left:16px; top:-80px; padding:12px; background:var(--panel); z-index:2000; }
 .skip:focus { top:8px; }
 header,main,footer { max-width:1600px; margin:auto; padding:24px 32px; }
-header { padding-top:32px; }
-h1,h2 { font-family:Georgia,"Times New Roman",serif; font-weight:500; line-height:1.15; letter-spacing:-.02em; }
-h1 { font-size:clamp(32px,4vw,48px); margin:8px 0 16px; }
-h2 { font-size:clamp(28px,3vw,36px); margin:8px 0 16px; }
+h1,h2,h3 { font-family:var(--display); font-weight:600; line-height:1.15; }
+h1 { font-size:28px; font-weight:700; letter-spacing:.01em; margin:8px 0 0; }
+h2 { font-size:26px; font-weight:700; margin:8px 0 16px; }
 h3 { font-size:18px; margin:24px 0 8px; }
 p { margin:8px 0 16px; }
-.eyebrow { color:var(--muted); font-size:13px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; }
-.intro { max-width:960px; }
-nav { display:flex; flex-wrap:wrap; gap:8px 24px; border-top:1px solid var(--line); padding-top:12px; }
-nav a,.map-link,summary { min-height:44px; display:inline-flex; align-items:center; }
-nav a[aria-current="true"] { font-weight:700; text-decoration-thickness:3px; }
+.eyebrow { color:var(--muted); font-family:var(--display); font-size:13px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; }
+.map-link,summary { min-height:44px; display:inline-flex; align-items:center; }
 main { padding-top:0; }
 .workspace { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:24px; align-items:start; }
 .map-panel { position:sticky; top:16px; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:var(--panel); }
-#map { height:calc(100vh - 140px); min-height:400px; max-height:820px; background:#e2e8e0; }
+#map { height:calc(100vh - 140px); min-height:400px; max-height:820px; background:var(--bg); }
 .map-panel p { padding:12px 16px; margin:0; font-size:13px; }
 .pin { border:0; background:transparent; }
-.pin span { display:block; width:44px; height:44px; border-radius:50%; background:var(--panel); border:3px solid var(--accent); color:var(--accent); text-align:center; font:bold 18px/38px system-ui; }
-.pin.selected span { background:var(--accent); color:#fff; }
-.leaflet-container a { color:#31583c; }
+.pin span { display:block; width:44px; height:44px; border-radius:50%; background:var(--panel); border:3px solid var(--accent); color:var(--link); text-align:center; font:700 20px/38px var(--display); }
+.pin.selected span { background:var(--accent); color:var(--accent-ink); }
+.leaflet-container { font-family:var(--body); }
+/* Filter tiles only, preserving photo colors and avoiding pane-wide redraws. */
+.leaflet-tile-pane img.leaflet-tile { filter:var(--tile-filter); }
+.leaflet-bar a,.leaflet-container .leaflet-control-attribution { background:var(--panel); color:var(--ink); }
+.leaflet-bar a:hover { background:var(--bg); color:var(--ink); }
+.leaflet-container .leaflet-control-attribution a { color:var(--link); }
 .view-toggle { display:none; gap:8px; margin:0 0 16px; }
 article { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:24px; margin-bottom:24px; }
 .map-ready article:not(.selected) { display:none; }
 .layout,.note,figcaption { color:var(--muted); }
 .price { display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 12px; margin:16px 0 4px; }
-.amount { font-size:32px; font-weight:600; font-variant-numeric:tabular-nums; }
-.warning { border-left:4px solid var(--accent); padding:16px; background:var(--warn-bg); margin:24px 0; }
+.amount { font-family:var(--display); font-size:32px; font-weight:600; font-variant-numeric:tabular-nums; }
+.warning { border-left:4px solid var(--accent); padding:16px; background:var(--warn-bg); color:var(--warn-ink); margin:24px 0; }
 .warning p { margin:0; }
 .photos { display:flex; gap:16px; overflow-x:auto; scroll-snap-type:x proximity; padding:4px 4px 16px; }
 figure { margin:0; min-width:0; flex:0 0 85%; scroll-snap-align:start; }
@@ -77,10 +104,6 @@ dialog::backdrop { background:rgb(15 24 19 / .85); }
 @media (max-width:800px) {
   header,main,footer { padding:24px 16px; }
   header { padding-top:16px; padding-bottom:16px; }
-  h1 { font-size:28px; }
-  .intro { font-size:14px; line-height:1.5; }
-  nav { flex-wrap:nowrap; overflow-x:auto; }
-  nav a { flex:0 0 auto; white-space:nowrap; }
   main { padding-top:0; }
   .workspace { display:block; }
   .map-panel { position:static; margin-bottom:24px; }
@@ -95,12 +118,13 @@ dialog::backdrop { background:rgb(15 24 19 / .85); }
   #photo-image { height:50vh; }
 }
 @media print {
+  :root,:root:not([data-theme="light"]),:root[data-theme] { color-scheme:light; --bg:#fff; --panel:#fff; --ink:#1c2420; --muted:#5d6b64; --link:#8a3e14; --warn-bg:#fbeee3; --warn-ink:#8a3e14; }
   body { background:#fff; font-size:11pt; }
   header,main,footer { max-width:none; padding:12px 0; }
   .workspace { display:block; }
   .map-ready article:not(.selected),.map-ready[data-view="map"] .property-panel { display:block; }
   article { border:0; padding:0; break-before:page; }
-  nav,.skip,.map-panel,.view-toggle,.map-link,dialog { display:none !important; }
+  .skip,.map-panel,.view-toggle,.map-link,dialog { display:none !important; }
   .photos { display:grid; grid-template-columns:1fr 1fr; overflow:visible; }
   figure img { height:160px; }
 }
@@ -111,8 +135,6 @@ dialog::backdrop { background:rgb(15 24 19 / .85); }
 <header id="top">
 <p class="eyebrow">Steve &amp; Sadie · Atlanta visit · 2026-11-07</p>
 <h1>Atlanta: three finalists</h1>
-<p class="intro">First-half visit decision, in Steve and Sadie&#x27;s order. Winton leads, Ponce is the backup, and Sixteenth is the alternate. These are preferences, not cleared rental approvals. Weighted comparison is deferred until the visit ends.</p>
-<nav aria-label="Finalist navigation"><a href="#winton-527-a">Lead · 527 Winton Ter NE</a><a href="#ponce-722">Backup · 722 Ponce de Leon Ct NE Apt 1</a><a href="#sixteenth-221-7">Alternate · 221 16th St NW Unit 7</a><a href="#policy">Current search brief</a></nav>
 </header>
 <main id="finalists">
 <div class="view-toggle" role="group" aria-label="Mobile view">
@@ -226,10 +248,6 @@ dialog::backdrop { background:rgb(15 24 19 / .85); }
     if (!picks.some(pick => pick.id === id)) return;
     selected = id;
     articles.forEach(article => article.classList.toggle('selected', article.id === id));
-    document.querySelectorAll('nav a').forEach(a => {
-      if (a.hash === '#' + id) a.setAttribute('aria-current', 'true');
-      else a.removeAttribute('aria-current');
-    });
     markers.forEach((marker,i) => {
       const element = marker.getElement();
       if (element) {
@@ -269,16 +287,14 @@ dialog::backdrop { background:rgb(15 24 19 / .85); }
       });
       markers.push(marker);
     });
-    map.fitBounds(picks.map(pick => [pick.location.lat,pick.location.lng]), {padding:[40,40],maxZoom:14});
+    const fitPins = () => map.fitBounds(picks.map(pick => [pick.location.lat,pick.location.lng]), {padding:[40,40],maxZoom:14});
+    map.on('resize', fitPins);
+    fitPins();
     body.classList.add('map-ready');
     document.getElementById('map-status').textContent = '1 Winton · 2 Ponce · 3 Sixteenth. Property locations, not unit entrances or route guidance. Select a pin for details.';
     select(selected);
   }
   window.addEventListener('hashchange', followHash);
-  // Native anchor navigation must also work when reselecting the current hash.
-  document.querySelectorAll('nav a').forEach(a => a.addEventListener('click', () => {
-    if (a.hash === location.hash) followHash();
-  }));
   followHash();
   const dialog = document.getElementById('gallery');
   const image = document.getElementById('photo-image');
